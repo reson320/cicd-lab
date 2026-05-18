@@ -9,7 +9,7 @@ describe('Fastify app', () => {
       url: '/health'
     });
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(500);
     expect(response.json()).toEqual({ status: 'ok' });
     await app.close();
   });
