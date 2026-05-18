@@ -1,0 +1,59 @@
+name: CI Homework
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: ci-homework-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Typecheck, format, and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Run tests with JUnit report
+        run: |
+          mkdir -p reports
+          npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
+
+      - name: Publish test results
+        if: always() && hashFiles('reports/vitest-junit.xml') != ''
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: reports/vitest-junit.xml
+          check_name: Vitest Test Results
+
+      - name: Upload test report artifact
+        if: always() && hashFiles('reports/vitest-junit.xml') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-junit-report
+          path: reports/vitest-junit.xml
+          if-no-files-found: warn
